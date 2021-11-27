@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 from hazm import *
-import pandas as pd
 
 class IR:
 
@@ -9,8 +8,8 @@ class IR:
         self.stemmer = Stemmer()
         self.lemmatizer = Lemmatizer()
 
-    def preprocess(self, content):
-        if not len(content) == 1:
+    def preprocess(self, content, is_query = 0):
+        if is_query == 0:
             normalized_content = []
             tokenized_content = []
             for i in range(len(content)):
@@ -30,12 +29,12 @@ class IR:
             normalized_content = normalizer.normalize(content)
             tokenized_content = word_tokenize(normalized_content)
             for i in range(len(tokenized_content)):
-                # tokenized_content[i] = stemmer.stem(tokenized_content[i])
+                tokenized_content[i] = stemmer.stem(tokenized_content[i])
                 tokenized_content[i] = lemmatizer.lemmatize(tokenized_content[i])
         return tokenized_content
     
     def get_positional_index(self, content):
-        preprocessed_data = self.preprocess(content)
+        preprocessed_data = self.preprocess(content, 0)
         positional_index = {}
         for docID in range(len(preprocessed_data)):
             for i in range(len(preprocessed_data[docID])):
@@ -53,13 +52,13 @@ class IR:
         return positional_index
 
     def delete_stop_words(self, positional_index):
-        docs = positional_index.keys()
-        freq_docs = sorted(docs, key= lambda x: positional_index[x][0], reverse= True)
+        terms = positional_index.keys()
+        freq_terms = sorted(terms, key= lambda x: positional_index[x][0], reverse= True)
         for i in range(10):
-            positional_index.pop(freq_docs[i], None)
+            positional_index.pop(freq_terms[i], None)
     
     def search(self, query, positional_index):
-        preprocessed_query = self.preprocess(query)
+        preprocessed_query = self.preprocess(query, 1)
 
         if len(preprocessed_query) > 1:
             for word in preprocessed_query:
@@ -73,7 +72,6 @@ class IR:
             query_substrings.reverse()
 
             priority = 0
-            min_len = len(query_substrings[0])
             related_content = {}
             for q in query_substrings:
                 merge_list = positional_index[q[0]][1]
@@ -86,9 +84,16 @@ class IR:
                 related_content[priority] = merge_list
                 priority += 1
 
-            return [preprocessed_query, related_content]
+            return [query_substrings, priority, related_content]
         else:
+            related_content = {}
             for i in range(len(positional_index)):
                 if preprocessed_query[0] in positional_index:
-                     related_content = positional_index[preprocessed_query[0]][1].keys()
-            return [preprocessed_query, related_content]
+                     related_content[0] = positional_index[preprocessed_query[0]][1]
+            return [[preprocessed_query], 1, related_content]
+
+    def print_result(self, query_results, title):
+        for i in range(query_results[1]):
+            print('Sub Query: ',' '.join(query_results[0][i]), end= '\n')
+            for doc in query_results[2][i].keys():
+                print('Title:', title[doc])
