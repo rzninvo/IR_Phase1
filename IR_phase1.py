@@ -55,6 +55,7 @@ class IR:
         terms = positional_index.keys()
         freq_terms = sorted(terms, key= lambda x: positional_index[x][0], reverse= True)
         for i in range(10):
+            print(freq_terms[i])
             positional_index.pop(freq_terms[i], None)
     
     def search(self, query, positional_index):
@@ -97,3 +98,4 @@ class IR:
             print('Sub Query: ',' '.join(query_results[0][i]), end= '\n')
             for doc in query_results[2][i].keys():
                 print('Title:', title[doc])
+                
